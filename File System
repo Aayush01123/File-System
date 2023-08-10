@@ -1,0 +1,287 @@
+import tkinter as tk
+from tkinter import messagebox, filedialog
+from tkinter import ttk
+import os
+import shutil
+
+
+class FileSystem:
+    def __init__(self, root):
+        self.root = root
+        self.current_directory = os.getcwd()
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.style = ttk.Style()
+        self.style.configure("TButton",
+                             font=("Arial", 12),
+                             width=15,
+                             padding=5)
+        self.label_made_by = ttk.Label(self.root, text="Made By Aayush Tiruwa", style="TLabel", font=("Arial", 14, "bold"))
+        self.label_made_by.pack()
+        self.style.configure("TLabel",
+                             font=("Arial", 12),
+                             padding=5)
+
+        self.label_path = ttk.Label(self.root, text="Current Directory:", style="TLabel")
+        self.label_path.pack()
+
+        self.label_directory = ttk.Label(self.root, text=self.current_directory, style="TLabel")
+        self.label_directory.pack()
+
+        self.frame_buttons = ttk.Frame(self.root)
+        self.frame_buttons.pack(pady=20)
+
+        self.button_create_file = ttk.Button(self.frame_buttons, text="Create File", command=self.create_file, style="TButton")
+        self.button_create_file.grid(row=0, column=0, padx=10)
+
+        self.button_create_folder = ttk.Button(self.frame_buttons, text="Create Directory", command=self.create_folder,
+                                               style="TButton")
+        self.button_create_folder.grid(row=0, column=1, padx=10)
+
+        self.button_delete = ttk.Button(self.frame_buttons, text="Delete Directory", command=self.delete_file_or_folder, style="TButton")
+        self.button_delete.grid(row=0, column=2, padx=10)
+
+        self.button_delete_file = ttk.Button(self.frame_buttons, text="Delete File", command=self.delete_file, style="TButton")
+        self.button_delete_file.grid(row=0, column=3, padx=10)
+
+        self.button_read = ttk.Button(self.frame_buttons, text="Read", command=self.read_file, style="TButton")
+        self.button_read.grid(row=1, column=0, padx=10)
+
+        self.button_update = ttk.Button(self.frame_buttons, text="Update", command=self.open_write_file_dialog, style="TButton")
+        self.button_update.grid(row=1, column=1, padx=10)
+
+        self.button_list_files = ttk.Button(self.frame_buttons, text="List Files", command=self.list_files,
+                                                 style="TButton")
+        self.button_list_files.grid(row=1, column=2, padx=10)
+
+        self.button_change_directory = ttk.Button(self.frame_buttons, text="Change Directory", command=self.change_directory,
+                                                  style="TButton")
+        self.button_change_directory.grid(row=1, column=3, padx=10)
+
+        self.button_rename_file = ttk.Button(self.frame_buttons, text="Rename File", command=self.rename_file, style="TButton")
+        self.button_rename_file.grid(row=2, column=0, padx=10)
+
+        self.button_copy_file = ttk.Button(self.frame_buttons, text="Copy File", command=self.copy_file, style="TButton")
+        self.button_copy_file.grid(row=2, column=1, padx=10)
+
+        self.permission_frame = ttk.Frame(self.root)
+        self.permission_frame.pack(pady=20)
+
+        self.label_permission = ttk.Label(self.permission_frame, text="File Permissions", style="TLabel")
+        self.label_permission.pack()
+
+        self.label_owner = ttk.Label(self.permission_frame, text="Owner:", style="TLabel")
+        self.label_owner.pack()
+
+        self.owner_permission_var = tk.StringVar()
+        self.owner_permission_entry = ttk.Entry(self.permission_frame, textvariable=self.owner_permission_var)
+        self.owner_permission_entry.pack()
+
+        self.label_group = ttk.Label(self.permission_frame, text="Group:", style="TLabel")
+        self.label_group.pack()
+
+        self.group_permission_var = tk.StringVar()
+        self.group_permission_entry = ttk.Entry(self.permission_frame, textvariable=self.group_permission_var)
+        self.group_permission_entry.pack()
+
+        self.label_others = ttk.Label(self.permission_frame, text="Others:", style="TLabel")
+        self.label_others.pack()
+
+        self.others_permission_var = tk.StringVar()
+        self.others_permission_entry = ttk.Entry(self.permission_frame, textvariable=self.others_permission_var)
+        self.others_permission_entry.pack()
+
+        self.button_set_permissions = ttk.Button(self.permission_frame, text="Set Permissions",
+                                                 command=self.set_permissions, style="TButton")
+        self.button_set_permissions.pack(pady=10)
+
+        self.file_listbox = tk.Listbox(self.root, font=("Arial", 12), width=40, height=10)
+        self.file_listbox.pack(pady=10)
+
+
+
+    def create_file(self):
+        try:
+            filename = filedialog.asksaveasfilename(defaultextension=".txt")
+            if filename:
+                with open(filename, "w") as file:
+                    file.write("")
+                self.update_permissions(filename)
+                messagebox.showinfo("Success", "File created successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to create file:\n{str(e)}")
+
+    def create_folder(self):
+        try:
+            foldername = filedialog.asksaveasfilename(defaultextension="")
+            if foldername:
+                os.makedirs(foldername, exist_ok=True)
+                self.update_permissions(foldername)
+                messagebox.showinfo("Success", "Folder created successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to create folder:\n{str(e)}")
+
+    def delete_file_or_folder(self):
+        try:
+            path = filedialog.askdirectory()
+            if path:
+                self.delete_directory(path)
+                messagebox.showinfo("Success", "Folder deleted successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete file or folder:\n{str(e)}")
+
+    def delete_directory(self, path):
+        for root, dirs, files in os.walk(path, topdown=False):
+            for file in files:
+                file_path = os.path.join(root, file)
+                os.remove(file_path)
+            for dir in dirs:
+                dir_path = os.path.join(root, dir)
+                os.rmdir(dir_path)
+        os.rmdir(path)
+
+    def delete_file(self):
+        try:
+            path = filedialog.askopenfilename()
+            if path:
+                os.remove(path)
+                messagebox.showinfo("Success", "File deleted successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete file:\n{str(e)}")
+
+    def read_file(self):
+        try:
+            path = filedialog.askopenfilename()
+            if path:
+                with open(path, "r") as file:
+                    content = file.read()
+
+                # Create a new window to display the file content
+                read_window = tk.Toplevel(self.root)
+                read_window.title("Read File")
+                read_window.geometry("400x300")
+
+                # Create a text widget to display the content
+                text_widget = tk.Text(read_window, font=("Arial", 12))
+                text_widget.pack(fill="both", expand=True)
+                text_widget.insert("1.0", content)
+                text_widget.configure(state="disabled")  # Make the text widget read-only
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to read file:\n{str(e)}")
+
+    def open_write_file_dialog(self):
+        try:
+            file_path = filedialog.askopenfilename()
+            if file_path:
+                write_window = tk.Toplevel(self.root)
+                write_window.title("Write File")
+                write_window.geometry("400x300")
+
+                text_widget = tk.Text(write_window, font=("Arial", 12))
+                text_widget.pack(fill="both", expand=True)
+
+                with open(file_path, "r") as file:
+                    content = file.read()
+                    text_widget.insert("1.0", content)
+
+                save_button = ttk.Button(write_window, text="Save", command=lambda: self.save_file(text_widget, file_path))
+                save_button.pack(pady=10)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open write file dialog:\n{str(e)}")
+
+    def save_file(self, text_widget, file_path):
+        try:
+            content = text_widget.get("1.0", tk.END)
+            with open(file_path, "w") as file:
+                file.write(content)
+            self.update_permissions(file_path)
+            messagebox.showinfo("Success", "File saved successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save file:\n{str(e)}")
+
+    def list_files(self):
+        try:
+            files = [file for file in os.listdir(self.current_directory) if os.path.isfile(os.path.join(self.current_directory, file))]
+            self.file_listbox.delete(0, tk.END)
+            if files:
+                for file in files:
+                    self.file_listbox.insert(tk.END, file)
+            else:
+                self.file_listbox.insert(tk.END, "No files found in the directory.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to list files:\n{str(e)}")
+
+    def change_directory(self):
+        try:
+            new_directory = filedialog.askdirectory()
+            if new_directory:
+                os.chdir(new_directory)
+                self.current_directory = new_directory
+                self.label_directory.config(text=self.current_directory)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to change directory:\n{str(e)}")
+
+    def set_permissions(self):
+        try:
+            path = filedialog.askopenfilename()
+            if path:
+                owner_permissions = self.owner_permission_var.get()
+                group_permissions = self.group_permission_var.get()
+                others_permissions = self.others_permission_var.get()
+
+                if owner_permissions or group_permissions or others_permissions:
+                    permission_string = owner_permissions + group_permissions + others_permissions
+                    permissions = int(permission_string, 8)
+                    os.chmod(path, permissions)
+                    messagebox.showinfo("Success", "Permissions updated successfully!")
+                else:
+                    messagebox.showinfo("Permissions", "Please enter permission values.")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to set permissions:\n{str(e)}")
+
+    def update_permissions(self, path):
+        try:
+            permissions = oct(os.stat(path).st_mode)[-3:]
+            self.owner_permission_var.set(permissions[0])
+            self.group_permission_var.set(permissions[1])
+            self.others_permission_var.set(permissions[2])
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update permissions:\n{str(e)}")
+
+    def rename_file(self):
+        try:
+            old_path = filedialog.askopenfilename()
+            if old_path:
+                new_name = filedialog.asksaveasfilename(defaultextension=".txt")
+                if new_name:
+                    os.rename(old_path, new_name)
+                    messagebox.showinfo("Success", "File renamed successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to rename file:\n{str(e)}")
+
+    def copy_file(self):
+        try:
+            source_path = filedialog.askopenfilename()
+            if source_path:
+                destination = filedialog.askdirectory()
+                if destination:
+                    shutil.copy(source_path, destination)
+                    messagebox.showinfo("Success", "File copied successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to copy file:\n{str(e)}")
+
+
+def main():
+    root = tk.Tk()
+    root.title("File System")
+
+    root.geometry("700x800")
+
+    file_system = FileSystem(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
